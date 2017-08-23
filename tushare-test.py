@@ -1,4 +1,6 @@
 import tushare as ts
+import numpy as np
+import pandas as pd
 import threading
 import Queue
 import time
@@ -78,6 +80,12 @@ def muliti_thread_huge_volume(total_stock,date_str,type):
         results.append(q.get())
     return results
 
+def high_opening(stock_df,high_opening_list):
+    result_df = ts.get_k_data(stock_df.name,start = '2017-08-21',end='2017-08-22')
+    print result_df
+    if result_df.iloc[0]['close'] < result_df.iloc[1]['open']:
+        high_opening_list.append(stock)
+
 
 if __name__ == '__main__':
     total_stock = ts.get_stock_basics()
@@ -86,10 +94,13 @@ if __name__ == '__main__':
     end = time.time()
     interval =  end - start
     print(interval)
+    high_opening_list = []
+    for stock in results:
+        high_opening(stock,high_opening_list)
     print
 #
 # count = 0
-# huge_set = set()
+# huge_set = set()*
 # for index,stock in total_stock.iterrows():
 #     count += 1
 #     print(str(count)+':'+ str(len(huge_set)))
