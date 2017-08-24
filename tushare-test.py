@@ -4,9 +4,10 @@ import pandas as pd
 import threading
 import Queue
 import time
+import datetime
 
 def huge_valume(stock_df,date_str,type,q):
-    detail_df = ts.get_tick_data(stock_df.name, date_str,src = type)
+    detail_df = ts.get_tick_data(code=stock_df.name, date=date_str,src = type)
 
     if type == 'tt' :
         if not detail_df is None and detail_df.size > 0:
@@ -82,33 +83,54 @@ def muliti_thread_huge_volume(total_stock,date_str,type):
 
 def high_opening(stock_df,high_opening_list):
     result_df = ts.get_k_data(stock_df.name,start = '2017-08-21',end='2017-08-22')
-    print result_df
+    # print result_df
     if result_df.iloc[0]['close'] < result_df.iloc[1]['open']:
-        high_opening_list.append(stock)
+        high_opening_list.append(stock_df.name)
 
+def limit_up(stock_df,limit_up_list) :
+    result_df = ts.get_k_data(stock_df.name, start='2017-08-21', end='2017-08-22')
+    if result_df.iloc[0]['close'] * 1.09 < result_df.iloc[1]['close']:
+        limit_up_list.append(stock_df.name)
 
-if __name__ == '__main__':
+def single_date_test():
     total_stock = ts.get_stock_basics()
     start = time.time()
-    results = muliti_thread_huge_volume(total_stock= total_stock,date_str='2017-08-22',type ='tt')
+    results = muliti_thread_huge_volume(total_stock=total_stock, date_str='2017-08-22', type='tt')
     end = time.time()
-    interval =  end - start
+    interval = end - start
     print(interval)
     high_opening_list = []
     for stock in results:
-        high_opening(stock,high_opening_list)
+        high_opening(stock, high_opening_list)
+    limit_up_list = []
+    for high_open_stock in high_opening_list:
+        limit_up(high_open_stock, limit_up_list=limit_up_list)
     print
-#
-# count = 0
-# huge_set = set()*
-# for index,stock in total_stock.iterrows():
-#     count += 1
-#     print(str(count)+':'+ str(len(huge_set)))
-#     # time.sleep(0.2)
-#     try:
-#         if huge_valume(stock_df = stock,date_str='2017-08-22',type = 'tt'):
-#             huge_set.add(stock.name)
-#     except BaseException:
-#         print('error code :' + stock.name)
-# print('-------------sep-----------')
-# print(huge_set)
+
+def batch_date_test():
+    total_stock = ts.get_stock_basics()
+    today = datetime.datetime.now()
+    huge_high_list = []
+    huge_high_limit_list = []
+    for i in range(10):
+        date = (today + datetime.timedelta(days=(-1 * (i + 1)))).date()
+        print('%s :', date)
+        start = time.time()
+        results = muliti_thread_huge_volume(total_stock=total_stock, date_str=date, type='tt')
+        end = time.time()
+        interval = end - start
+        print(interval)
+        high_opening_list = []
+        for stock in results:
+            high_opening(stock, high_opening_list)
+        huge_high_list.extend(high_opening_list)
+        limit_up_list = []
+        for high_open_stock in high_opening_list:
+            limit_up(high_open_stock, limit_up_list=limit_up_list)
+        huge_high_limit_list.extend(limit_up_list)
+
+    result = (huge_high_limit_list *1.0) / (huge_high_list * 1.0)
+    print(result)
+
+if __name__ == '__main__':
+    pass
