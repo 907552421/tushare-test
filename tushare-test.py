@@ -81,16 +81,18 @@ def muliti_thread_huge_volume(total_stock,date_str,type):
         results.append(q.get())
     return results
 
-def high_opening(stock_df,high_opening_list):
-    result_df = ts.get_k_data(stock_df.name,start = '2017-08-21',end='2017-08-22')
+def high_opening(stock_code,high_opening_list,date_str,last_date_str):
+    result_df = ts.get_k_data(stock_code,start = last_date_str,end=date_str)
     # print result_df
-    if result_df.iloc[0]['close'] < result_df.iloc[1]['open']:
-        high_opening_list.append(stock_df.name)
+    if not result_df is None and result_df.index.size == 2:
+        if result_df.iloc[0]['close'] < result_df.iloc[1]['open']:
+            high_opening_list.append(stock_code)
 
-def limit_up(stock_df,limit_up_list) :
-    result_df = ts.get_k_data(stock_df.name, start='2017-08-21', end='2017-08-22')
-    if result_df.iloc[0]['close'] * 1.09 < result_df.iloc[1]['close']:
-        limit_up_list.append(stock_df.name)
+def limit_up(stock_code,limit_up_list,date_str,last_date_str) :
+    result_df = ts.get_k_data(stock_code, start=last_date_str, end=date_str)
+    if not result_df is None and result_df.index.size == 2:
+        if result_df.iloc[0]['close'] * 1.09 < result_df.iloc[1]['close']:
+            limit_up_list.append(stock_code)
 
 def single_date_test():
     total_stock = ts.get_stock_basics()
@@ -113,24 +115,27 @@ def batch_date_test():
     huge_high_list = []
     huge_high_limit_list = []
     for i in range(10):
-        date = (today + datetime.timedelta(days=(-1 * (i + 1)))).date()
-        print('%s :', date)
+        date = today + datetime.timedelta(days=(-1 * (i + 1)))
+        last_date = date + datetime.timedelta( days= (-1))
+        date_str = date.strftime('%Y-%m-%d')
+        last_date_str = last_date.strftime('%Y-%m-%d')
+        print('%s :', date_str)
         start = time.time()
-        results = muliti_thread_huge_volume(total_stock=total_stock, date_str=date, type='tt')
+        results = muliti_thread_huge_volume(total_stock=total_stock, date_str=date_str, type='tt')
         end = time.time()
         interval = end - start
         print(interval)
         high_opening_list = []
         for stock in results:
-            high_opening(stock, high_opening_list)
+            high_opening(stock_code= stock.name, high_opening_list= high_opening_list,date_str=date_str,last_date_str=last_date_str)
         huge_high_list.extend(high_opening_list)
         limit_up_list = []
-        for high_open_stock in high_opening_list:
-            limit_up(high_open_stock, limit_up_list=limit_up_list)
+        for high_open_stock_code in high_opening_list:
+            limit_up(stock_code= high_open_stock_code, limit_up_list=limit_up_list,date_str=date_str,last_date_str=last_date_str)
         huge_high_limit_list.extend(limit_up_list)
 
     result = (huge_high_limit_list *1.0) / (huge_high_list * 1.0)
     print(result)
 
 if __name__ == '__main__':
-    pass
+    batch_date_test()
